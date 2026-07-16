@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:taxed/utils/emoji_utils.dart';
 import 'package:taxed/utils/input_limits.dart';
 import 'package:taxed/widgets/app_text_field.dart';
 
@@ -7,11 +6,13 @@ class InsertPersonRow extends StatelessWidget {
   const InsertPersonRow({
     super.key,
     required this.nameController,
+    required this.emoji,
     required this.onEmojiTap,
     required this.labelColor,
   });
 
   final TextEditingController nameController;
+  final String emoji;
   final VoidCallback onEmojiTap;
   final Color labelColor;
 
@@ -41,22 +42,9 @@ class InsertPersonRow extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
               alignment: Alignment.center,
-              child: ValueListenableBuilder<TextEditingValue>(
-                valueListenable: nameController,
-                builder: (context, value, _) {
-                  final emoji = leadingEmoji(value.text);
-                  if (emoji != null) {
-                    return Text(
-                      emoji,
-                      style: const TextStyle(fontSize: 22),
-                    );
-                  }
-                  return Icon(
-                    Icons.add_reaction_outlined,
-                    size: 22,
-                    color: labelColor.withValues(alpha: 0.6),
-                  );
-                },
+              child: Text(
+                emoji.isEmpty ? '😉' : emoji,
+                style: const TextStyle(fontSize: 22),
               ),
             ),
           ),

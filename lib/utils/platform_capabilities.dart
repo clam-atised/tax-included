@@ -1,13 +1,8 @@
 import 'package:flutter/foundation.dart';
 
-TargetPlatform? debugTargetPlatformForTests;
-
-TargetPlatform get _platform =>
-    debugTargetPlatformForTests ?? defaultTargetPlatform;
-
 bool get supportsCameraCapture {
   if (kIsWeb) return false;
-  switch (_platform) {
+  switch (defaultTargetPlatform) {
     case TargetPlatform.android:
     case TargetPlatform.iOS:
       return true;
@@ -18,7 +13,7 @@ bool get supportsCameraCapture {
 
 bool get supportsFileUpload {
   if (kIsWeb) return true;
-  switch (_platform) {
+  switch (defaultTargetPlatform) {
     case TargetPlatform.linux:
     case TargetPlatform.macOS:
     case TargetPlatform.windows:
@@ -26,9 +21,4 @@ bool get supportsFileUpload {
     default:
       return false;
   }
-}
-
-bool get supportsReceiptReadTimeout {
-  if (kIsWeb) return true;
-  return _platform == TargetPlatform.windows;
 }

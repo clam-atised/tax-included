@@ -4,15 +4,12 @@ import 'package:taxed/app/app_scope.dart';
 import 'package:taxed/models/insert_models.dart';
 import 'package:taxed/models/receipt_display_models.dart';
 import 'package:taxed/models/tax_models.dart';
-import 'package:taxed/screens/home_screen.dart';
 import 'package:taxed/screens/receipt_items_edit_screen.dart';
 import 'package:taxed/screens/tax_insert.dart';
 import 'package:taxed/services/receipt_calculator.dart';
 import 'package:taxed/theme/app_colors.dart';
 import 'package:taxed/theme/app_text_styles.dart';
 import 'package:taxed/theme/app_theme_controller.dart';
-import 'package:taxed/controllers/insert_store.dart';
-import 'package:taxed/widgets/app_content_width.dart';
 import 'package:taxed/widgets/dual_action_bar.dart';
 import 'package:taxed/widgets/receipt_line_section.dart';
 import 'package:taxed/widgets/receipt_paper.dart';
@@ -25,14 +22,12 @@ class ReceiptPreviewScreen extends StatefulWidget {
     required this.batches,
     this.taxData,
     this.fromUpload = false,
-    this.store,
   });
 
   final AppThemeController theme;
   final List<InsertBatch> batches;
   final TaxInsertData? taxData;
   final bool fromUpload;
-  final InsertStore? store;
 
   bool get isTaxed => taxData != null;
 
@@ -47,8 +42,6 @@ class _ReceiptPreviewScreenState extends State<ReceiptPreviewScreen> {
   ReceiptSummary? _summary;
   TaxedReceiptSummary? _taxedSummary;
 
-  InsertStore get _store => widget.store ?? AppScope.of(context).store;
-
   bool get _isTaxed => widget.isTaxed;
 
   @override
@@ -62,7 +55,7 @@ class _ReceiptPreviewScreenState extends State<ReceiptPreviewScreen> {
     if (_isTaxed) {
       _taxedSummary = ReceiptCalculator.computeWithTax(
         _batches,
-        widget.taxData!.rules,
+        widget.taxData!.rates,
       );
       _summary = null;
     } else {
@@ -95,21 +88,11 @@ class _ReceiptPreviewScreenState extends State<ReceiptPreviewScreen> {
     if (_taxedSummary == null) return;
     showReceiptPrintDialog(
       context,
-      summary: _taxedSummary!,
-      initialSortMode: _sortMode,
-      onCompleted: () => _store.clear(),
-    );
-  }
-
-  void _goHome() {
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute<void>(
-        builder: (_) => HomeScreen(
-          theme: widget.theme,
-          store: _store,
-        ),
+      initialText: ReceiptCalculator.formatReceiptText(
+        _taxedSummary!,
+        _sortMode,
       ),
-      (route) => false,
+      onCompleted: () => AppScope.of(context).store.clear(),
     );
   }
 
@@ -131,20 +114,6 @@ class _ReceiptPreviewScreenState extends State<ReceiptPreviewScreen> {
       }
       return;
     }
-
-    if (_isTaxed) {
-      Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (_) => TaxInsertScreen(
-            theme: widget.theme,
-            batches: _batches,
-            store: _store,
-          ),
-        ),
-      );
-      return;
-    }
-
     Navigator.of(context).pop();
   }
 
@@ -158,156 +127,139 @@ class _ReceiptPreviewScreenState extends State<ReceiptPreviewScreen> {
         return Scaffold(
           backgroundColor: widget.theme.background,
           body: SafeArea(
-            child: AppContentWidth(
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 16,
-                    ),
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Row(
-                          children: [
-                            InkWell(
-                              key: const Key('sort_toggle'),
-                              onTap: _toggleSort,
-                              borderRadius: BorderRadius.circular(8),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 4,
-                                  vertical: 4,
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    SvgPicture.asset(
-                                      'assets/icons/arrow-up-down.svg',
-                                      width: 24,
-                                      height: 24,
-                                      colorFilter: const ColorFilter.mode(
-                                        AppColors.accentOrange,
-                                        BlendMode.srcIn,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      _sortMode == ReceiptSortMode.byItem
-                                          ? 'By Item'
-                                          : 'By Person',
-                                      style: AppTextStyles.fira(
-                                        size: 16,
-                                        color: labelColor,
-                                      ),
-                                    ),
-                                  ],
+            child: Column(
+              children: [
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  child: Row(
+                    children: [
+                      InkWell(
+                        key: const Key('sort_toggle'),
+                        onTap: _toggleSort,
+                        borderRadius: BorderRadius.circular(8),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 4,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              SvgPicture.asset(
+                                'assets/icons/arrow-up-down.svg',
+                                width: 24,
+                                height: 24,
+                                colorFilter: const ColorFilter.mode(
+                                  AppColors.accentOrange,
+                                  BlendMode.srcIn,
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                        if (_isTaxed)
-                          IconButton(
-                            key: const Key('taxed_preview_home_button'),
-                            icon: Icon(Icons.home, color: labelColor),
-                            onPressed: _goHome,
-                          ),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: Text(
-                            'Receipt Preview',
-                            style: AppTextStyles.fira(
-                              size: 20,
-                              color: labelColor,
-                              weight: FontWeight.w500,
-                            ),
+                              const SizedBox(width: 8),
+                              Text(
+                                _sortMode == ReceiptSortMode.byItem
+                                    ? 'By Item'
+                                    : 'By Person',
+                                style: AppTextStyles.fira(
+                                  size: 16,
+                                  color: labelColor,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        'Receipt Preview',
+                        style: AppTextStyles.fira(
+                          size: 20,
+                          color: labelColor,
+                          weight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 32),
-                      child: ClipPath(
-                        clipper: const ReceiptPaperClipper(),
-                        child: Container(
-                          width: double.infinity,
-                          color: Colors.white,
-                          padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
-                          child: SingleChildScrollView(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                ReceiptLineSection(
-                                  lines: _displayLines,
-                                  labelColor: labelColor,
-                                  sortMode: _sortMode,
-                                ),
-                                const SizedBox(height: 16),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    child: ClipPath(
+                      clipper: const ReceiptPaperClipper(),
+                      child: Container(
+                        width: double.infinity,
+                        color: Colors.white,
+                        padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+                        child: SingleChildScrollView(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              ReceiptLineSection(
+                                lines: _displayLines,
+                                labelColor: labelColor,
+                                sortMode: _sortMode,
+                              ),
+                              const SizedBox(height: 16),
+                              if (_isTaxed)
+                                DoubleReceiptDivider(color: labelColor)
+                              else
                                 Container(height: 1, color: labelColor),
-                                const SizedBox(height: 12),
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      _isTaxed
-                                          ? 'Total (with tax)'
-                                          : 'Total',
-                                      style: AppTextStyles.fira(
-                                        size: 16,
-                                        color: labelColor,
-                                        weight: FontWeight.w500,
-                                      ),
+                              const SizedBox(height: 12),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    _isTaxed ? 'Total (with tax)' : 'Total',
+                                    style: AppTextStyles.fira(
+                                      size: 16,
+                                      color: labelColor,
+                                      weight: FontWeight.w500,
                                     ),
-                                    Text(
-                                      ReceiptCalculator.formatAmount(_total),
-                                      style: AppTextStyles.fira(
-                                        size: 16,
-                                        color: labelColor,
-                                        weight: FontWeight.w500,
-                                      ),
+                                  ),
+                                  Text(
+                                    ReceiptCalculator.formatAmount(_total),
+                                    style: AppTextStyles.fira(
+                                      size: 16,
+                                      color: labelColor,
+                                      weight: FontWeight.w500,
                                     ),
-                                  ],
-                                ),
-                              ],
-                            ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
                       ),
                     ),
                   ),
-                  DualActionBar(
-                    left: DualActionBarAction(
-                      key: const Key('edit_button'),
-                      label: 'Edit',
-                      onTap: _onEdit,
-                    ),
-                    right: DualActionBarAction(
-                      key: _isTaxed
-                          ? const Key('print_button')
-                          : const Key('preview_confirm_button'),
-                      label: _isTaxed ? 'Print' : 'Confirm',
-                      onTap: _isTaxed
-                          ? _openPrintDialog
-                          : () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute<void>(
-                                  builder: (_) => TaxInsertScreen(
-                                    theme: widget.theme,
-                                    batches: _batches,
-                                    store: _store,
-                                  ),
-                                ),
-                              );
-                            },
-                    ),
+                ),
+                DualActionBar(
+                  left: DualActionBarAction(
+                    key: const Key('edit_button'),
+                    label: 'Edit',
+                    onTap: _onEdit,
                   ),
-                ],
-              ),
+                  right: DualActionBarAction(
+                    key: _isTaxed
+                        ? const Key('print_button')
+                        : const Key('preview_confirm_button'),
+                    label: _isTaxed ? 'Print' : 'Confirm',
+                    onTap: _isTaxed
+                        ? _openPrintDialog
+                        : () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => TaxInsertScreen(
+                                  theme: widget.theme,
+                                  batches: _batches,
+                                ),
+                              ),
+                            );
+                          },
+                  ),
+                ),
+              ],
             ),
           ),
         );

@@ -3,15 +3,11 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:taxed/controllers/insert_store.dart';
 import 'package:taxed/screens/insert.dart';
-import 'package:receipt_recognition/receipt_recognition.dart';
 import 'package:taxed/screens/receipt_capture_screen.dart';
-import 'package:taxed/screens/receipt_preview.dart';
 import 'package:taxed/screens/receipt_upload_screen.dart';
-import 'package:taxed/services/receipt_upload_mapper.dart';
 import 'package:taxed/screens/setting.dart';
 import 'package:taxed/theme/app_theme_controller.dart';
 import 'package:taxed/utils/platform_capabilities.dart';
-import 'package:taxed/widgets/app_content_width.dart';
 import 'package:taxed/widgets/home_action_button.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -24,37 +20,6 @@ class HomeScreen extends StatelessWidget {
   final AppThemeController theme;
   final InsertStore store;
 
-  Future<void> _openCaptureReceipt(BuildContext context) async {
-    final receipt = await Navigator.of(context).push<RecognizedReceipt>(
-      MaterialPageRoute(
-        builder: (_) => const ReceiptCaptureScreen(),
-      ),
-    );
-    if (!context.mounted || receipt == null) return;
-
-    final batch = ReceiptUploadMapper.mapReceiptToBatch(receipt);
-    if (batch == null || batch.items.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Could not find any line items in this receipt. Try again.',
-          ),
-        ),
-      );
-      return;
-    }
-
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => ReceiptPreviewScreen(
-          theme: theme,
-          batches: [batch],
-          fromUpload: true,
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -63,9 +28,8 @@ class HomeScreen extends StatelessWidget {
         return Scaffold(
           backgroundColor: theme.background,
           body: SafeArea(
-            child: AppContentWidth(
-              child: Column(
-                children: [
+            child: Column(
+              children: [
                 Align(
                   alignment: Alignment.topRight,
                   child: Padding(
@@ -100,7 +64,13 @@ class HomeScreen extends StatelessWidget {
                     label: 'Capture receipt',
                     buttonColor: theme.buttonFill,
                     labelColor: theme.buttonLabel,
-                    onTap: () => _openCaptureReceipt(context),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const ReceiptCaptureScreen(),
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(height: 24),
                 ],
@@ -126,10 +96,6 @@ class HomeScreen extends StatelessWidget {
                   buttonColor: theme.buttonFill,
                   labelColor: theme.buttonLabel,
                   onTap: () {
-                    if (store.savedBatches.isNotEmpty &&
-                        store.editingBatchIndex == null) {
-                      store.loadBatch(0);
-                    }
                     Navigator.of(context).push(
                       MaterialPageRoute<void>(
                         builder: (_) => InsertScreen(
@@ -155,7 +121,6 @@ class HomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
               ],
-            ),
             ),
           ),
         );

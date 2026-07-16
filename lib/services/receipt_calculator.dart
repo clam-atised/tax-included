@@ -1,5 +1,4 @@
 import 'package:taxed/models/insert_models.dart';
-import 'package:taxed/models/tax_models.dart';
 import 'package:taxed/utils/amount_parser.dart';
 
 enum ReceiptSortMode { byItem, byPerson }
@@ -122,7 +121,7 @@ abstract final class ReceiptCalculator {
 
   static TaxedReceiptSummary computeWithTax(
     List<InsertBatch> batches,
-    List<TaxRule> rules,
+    List<double> rates,
   ) {
     final itemViews = <TaxedReceiptItemView>[];
     final personBaseTotals = <String, double>{};
@@ -130,14 +129,13 @@ abstract final class ReceiptCalculator {
     final personItems = <String, List<String>>{};
     var totalBase = 0.0;
     var totalTax = 0.0;
+    var itemIndex = 0;
 
     for (final record in _iterateItems(batches)) {
-      var itemTax = 0.0;
-      for (final rule in rules) {
-        if (!rule.appliesToItem(record.name)) continue;
-        itemTax += taxForItem(record.amount, rule.rate);
-      }
+      final rate = itemIndex < rates.length ? rates[itemIndex] : 0.0;
+      itemIndex++;
 
+      final itemTax = taxForItem(record.amount, rate);
       final amountWithTax = record.amount + itemTax;
       totalBase += record.amount;
       totalTax += itemTax;
@@ -154,23 +152,11 @@ abstract final class ReceiptCalculator {
       if (record.assignedPersons.isEmpty) continue;
 
       final baseShare = record.amount / record.assignedPersons.length;
+      final taxShare = itemTax / record.assignedPersons.length;
       for (final person in record.assignedPersons) {
         personBaseTotals[person] = (personBaseTotals[person] ?? 0) + baseShare;
+        personTaxTotals[person] = (personTaxTotals[person] ?? 0) + taxShare;
         personItems.putIfAbsent(person, () => []).add(record.name);
-      }
-
-      for (final rule in rules) {
-        if (!rule.appliesToItem(record.name)) continue;
-        final ruleTax = taxForItem(record.amount, rule.rate);
-        final eligiblePersons = record.assignedPersons
-            .where((person) => rule.appliesToPerson(person))
-            .toList();
-        if (eligiblePersons.isEmpty) continue;
-
-        final taxShare = ruleTax / eligiblePersons.length;
-        for (final person in eligiblePersons) {
-          personTaxTotals[person] = (personTaxTotals[person] ?? 0) + taxShare;
-        }
       }
     }
 
@@ -194,18 +180,6 @@ abstract final class ReceiptCalculator {
     );
   }
 
-  static Set<String> collectPersonNames(List<InsertBatch> batches) {
-    return batches
-        .expand((batch) => batch.persons)
-        .map((person) => person.name.trim())
-        .where((name) => name.isNotEmpty)
-        .toSet();
-  }
-
-  static Set<String> collectItemNames(List<InsertBatch> batches) {
-    return _iterateItems(batches).map((record) => record.name).toSet();
-  }
-
   static Iterable<_ParsedItemRecord> _iterateItems(List<InsertBatch> batches) {
     return batches.expand((batch) {
       final persons = batch.persons
@@ -214,14 +188,12 @@ abstract final class ReceiptCalculator {
           .toList();
 
       return batch.items.map((item) {
-        final unitAmount = AmountParser.parseAmount(item.amount);
-        final qty = item.quantity <= 0 ? 1 : item.quantity;
-        final amount = unitAmount * qty;
+        final amount = AmountParser.parseAmount(item.amount);
         if (amount == 0 && item.name.trim().isEmpty) {
           return null;
         }
 
-        final assignedPersons = persons;
+        final assignedPersons = _assignedPersons(persons, item.splitCount);
         final itemName =
             item.name.trim().isEmpty ? 'Item' : item.name.trim();
 
@@ -242,10 +214,7 @@ abstract final class ReceiptCalculator {
 
     if (sortMode == ReceiptSortMode.byItem) {
       for (final item in summary.itemsByItem) {
-        buffer.writeln(_formatLine(item.name, item.amountWithTax - item.itemTax));
-        if (item.itemTax > 0) {
-          buffer.writeln(_formatLine('Tax', item.itemTax));
-        }
+        buffer.writeln(_formatLine(item.name, item.amountWithTax));
         if (item.personNames.isNotEmpty) {
           buffer.writeln(item.personNames.join(', '));
         }
@@ -258,7 +227,7 @@ abstract final class ReceiptCalculator {
           buffer.writeln(person.itemNames.join(', '));
         }
         if (person.taxAmount > 0) {
-          buffer.writeln(_formatLine('Tax', person.taxAmount));
+          buffer.writeln(_formatLine('Tax per person', person.taxAmount));
         }
         buffer.writeln('---');
       }
@@ -270,6 +239,12 @@ abstract final class ReceiptCalculator {
 
   static String _formatLine(String label, double amount) {
     return '${label.padRight(20)}${formatAmount(amount)}';
+  }
+
+  static List<String> _assignedPersons(List<String> persons, int splitCount) {
+    if (persons.isEmpty) return [];
+    if (splitCount <= 0 || splitCount >= persons.length) return persons;
+    return persons.take(splitCount).toList();
   }
 
   static String formatAmount(double amount) {

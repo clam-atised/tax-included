@@ -7,7 +7,6 @@ import 'package:taxed/theme/app_text_styles.dart';
 import 'package:taxed/theme/app_theme_controller.dart';
 import 'package:taxed/utils/input_formatters.dart';
 import 'package:taxed/utils/input_limits.dart';
-import 'package:taxed/widgets/app_content_width.dart';
 import 'package:taxed/widgets/app_text_field.dart';
 import 'package:taxed/widgets/dual_action_bar.dart';
 import 'package:taxed/widgets/form_panel.dart';
@@ -76,9 +75,8 @@ class _ReceiptItemsEditScreenState extends State<ReceiptItemsEditScreen> {
         return Scaffold(
           backgroundColor: widget.theme.background,
           body: SafeArea(
-            child: AppContentWidth(
-              child: Column(
-                children: [
+            child: Column(
+              children: [
                 ScreenTitleHeader(
                   title: 'Manual insert',
                   labelColor: labelColor,
@@ -217,7 +215,6 @@ class _ReceiptItemsEditScreenState extends State<ReceiptItemsEditScreen> {
                   ),
                 ),
               ],
-            ),
             ),
           ),
         );

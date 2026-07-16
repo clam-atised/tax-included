@@ -37,23 +37,11 @@ class TaxIncludedApp extends StatelessWidget {
         return MaterialApp(
           title: 'Tax Included',
           debugShowCheckedModeBanner: false,
-          themeMode: theme.isNightMode ? ThemeMode.dark : ThemeMode.light,
           theme: ThemeData(
-            brightness: Brightness.light,
             scaffoldBackgroundColor: theme.background,
             colorScheme: ColorScheme.fromSeed(
               seedColor: theme.includedText,
               surface: theme.background,
-            ),
-            textTheme: GoogleFonts.firaCodeTextTheme(),
-          ),
-          darkTheme: ThemeData(
-            brightness: Brightness.dark,
-            scaffoldBackgroundColor: theme.background,
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: theme.includedText,
-              surface: theme.background,
-              brightness: Brightness.dark,
             ),
             textTheme: GoogleFonts.firaCodeTextTheme(),
           ),

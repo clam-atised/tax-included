@@ -2,20 +2,22 @@ class ItemEntry {
   ItemEntry({
     required this.name,
     required this.amount,
-    this.quantity = 0,
+    this.splitCount = 0,
   });
 
   final String name;
   final String amount;
-  final int quantity;
+  final int splitCount;
 }
 
 class PersonEntry {
   PersonEntry({
     required this.name,
+    required this.emoji,
   });
 
   final String name;
+  final String emoji;
 }
 
 class InsertBatch {

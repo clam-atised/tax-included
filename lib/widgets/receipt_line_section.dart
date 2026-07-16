@@ -27,14 +27,11 @@ class ReceiptLineSection extends StatelessWidget {
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        for (var index = 0; index < lines.length; index++)
-          ..._buildLineWidgets(lines[index], isLast: index == lines.length - 1),
-      ],
+      children: lines.expand((line) => _buildLineWidgets(line)).toList(),
     );
   }
 
-  List<Widget> _buildLineWidgets(ReceiptDisplayLine line, {required bool isLast}) {
+  List<Widget> _buildLineWidgets(ReceiptDisplayLine line) {
     return [
       Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -84,10 +81,8 @@ class ReceiptLineSection extends StatelessWidget {
         ),
       ],
       const SizedBox(height: 12),
-      if (!isLast) ...[
-        DashedLine(color: labelColor.withValues(alpha: 0.4)),
-        const SizedBox(height: 12),
-      ],
+      DashedLine(color: labelColor.withValues(alpha: 0.4)),
+      const SizedBox(height: 12),
     ];
   }
 }

@@ -8,10 +8,6 @@ import 'package:taxed/services/receipt_calculator.dart';
 abstract final class ReceiptUploadMapper {
   static bool debugRunSynchronously = false;
 
-  static InsertBatch? mapReceiptToBatch(RecognizedReceipt receipt) {
-    return _receiptToBatch(receipt);
-  }
-
   static Future<InsertBatch?> mapTextToBatch(String rawText) async {
     final trimmed = rawText.trim();
     if (trimmed.isEmpty) return null;
@@ -43,7 +39,6 @@ abstract final class ReceiptUploadMapper {
         ItemEntry(
           name: name.isEmpty ? 'Item' : name,
           amount: ReceiptCalculator.formatAmount(amount),
-          quantity: 1,
         ),
       );
     }
@@ -59,7 +54,7 @@ abstract final class ReceiptUploadMapper {
           (item) => ItemEntry(
             name: item.name,
             amount: item.amount,
-            quantity: item.quantity,
+            splitCount: item.splitCount,
           ),
         )
         .toList();
@@ -69,61 +64,47 @@ abstract final class ReceiptUploadMapper {
     return items.map((item) => item.name).toSet().toList()..sort();
   }
 
-  static RecognizedText plainTextToRecognizedText(String text) =>
-      _toRecognizedText(text);
-
   static RecognizedText _toRecognizedText(String text) {
-    final lines =
-        text.split('\n').where((line) => line.trim().isNotEmpty).toList();
-    final textLines = <TextLine>[];
-    var y = 10.0;
-    const lineHeight = 30.0;
-    const amountPattern = r'^(?<label>.+?)\s+(?<amount>\d+[.,]\d{2})\s*$';
+    final lines = text.split('\n').where((line) => line.trim().isNotEmpty);
+    final blocks = <TextBlock>[];
+    var y = 0.0;
 
-    for (final rawLine in lines) {
-      final line = rawLine.trim();
-      final match = RegExp(amountPattern).firstMatch(line);
-      if (match != null) {
-        final label = match.namedGroup('label')!.trim();
-        final amount = match.namedGroup('amount')!;
-        textLines.add(
-          _ocrLine(label, Rect.fromLTWH(50, y, 180, lineHeight)),
-        );
-        textLines.add(
-          _ocrLine(amount, Rect.fromLTWH(280, y, 80, lineHeight)),
-        );
-      } else {
-        textLines.add(
-          _ocrLine(line, Rect.fromLTWH(50, y, 200, lineHeight)),
-        );
-      }
-      y += lineHeight;
+    for (final line in lines) {
+      final textLine = _lineToTextLine(line, y);
+      blocks.add(
+        TextBlock(
+          text: line,
+          lines: [textLine],
+          boundingBox: Rect.fromLTWH(0, y, 400, 16),
+          recognizedLanguages: const ['en'],
+          cornerPoints: const [],
+        ),
+      );
+      y += 18;
     }
 
-    if (textLines.isEmpty) {
-      return RecognizedText(text: text, blocks: const []);
-    }
-
-    final block = TextBlock(
-      text: lines.join('\n'),
-      lines: textLines,
-      boundingBox: Rect.fromLTWH(50, 10, 310, y),
-      recognizedLanguages: const ['en'],
-      cornerPoints: const [],
-    );
-
-    return RecognizedText(text: text, blocks: [block]);
+    return RecognizedText(text: text, blocks: blocks);
   }
 
-  static TextLine _ocrLine(String text, Rect box) {
+  static TextLine _lineToTextLine(String line, double y) {
     return TextLine(
-      text: text,
-      elements: const [],
-      boundingBox: box,
-      recognizedLanguages: const [],
+      text: line,
+      confidence: y,
+      angle: y,
+      elements: [
+        TextElement(
+          text: line,
+          boundingBox: Rect.fromLTWH(0, y, 400, 16),
+          cornerPoints: const [],
+          symbols: const [],
+          recognizedLanguages: const [],
+          confidence: y,
+          angle: y
+        ),
+      ],
+      boundingBox: Rect.fromLTWH(0, y, 400, 16),
+      recognizedLanguages: const ['en'],
       cornerPoints: const [],
-      confidence: null,
-      angle: null,
     );
   }
 }

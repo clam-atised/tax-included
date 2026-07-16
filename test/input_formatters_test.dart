@@ -36,6 +36,25 @@ void main() {
     });
   });
 
+  group('MaxIntFormatter', () {
+    final formatter = MaxIntFormatter();
+
+    test('accepts values up to 100', () {
+      expect(_format(formatter, '', '100').text, '100');
+      expect(_format(formatter, '', '42').text, '42');
+    });
+
+    test('rejects values above 100', () {
+      expect(_format(formatter, '100', '101').text, '100');
+    });
+
+    test('clampParsed clamps out of range values', () {
+      expect(formatter.clampParsed(''), InputLimits.minSplitCount);
+      expect(formatter.clampParsed('50'), 50);
+      expect(formatter.clampParsed('150'), InputLimits.maxSplitCount);
+    });
+  });
+
   group('AmountParser', () {
     test('parseAmount clamps to max item amount', () {
       expect(AmountParser.parseAmount('99999'), InputLimits.maxItemAmount);

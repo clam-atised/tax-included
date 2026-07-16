@@ -50,35 +50,5 @@ Total     17.50
 
       expect(names, ['Coffee', 'Tea']);
     });
-
-    test('mapReceiptToBatch returns null for empty receipt', () {
-      final batch = ReceiptUploadMapper.mapReceiptToBatch(
-        RecognizedReceipt.empty(),
-      );
-      expect(batch, isNull);
-    });
-
-    test('mapReceiptToBatch maps recognized receipt positions', () async {
-      const sample = '''
-STORE NAME
-Item A    12.50
-Item B     5.00
-Total     17.50
-''';
-
-      final textBatch = await ReceiptUploadMapper.mapTextToBatch(sample);
-      expect(textBatch, isNotNull);
-
-      final receipt = await ReceiptTextProcessor.processText(
-        ReceiptUploadMapper.plainTextToRecognizedText(sample.trim()),
-        ReceiptOptions.defaults(),
-      );
-
-      final batch = ReceiptUploadMapper.mapReceiptToBatch(receipt);
-      expect(batch, isNotNull);
-      expect(batch!.persons, isEmpty);
-      expect(batch.items, isNotEmpty);
-      expect(batch.items.length, textBatch!.items.length);
-    });
   });
 }

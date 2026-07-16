@@ -66,14 +66,8 @@ extension TaxedReceiptSummaryDisplay on TaxedReceiptSummary {
           .map(
             (item) => ReceiptDisplayLine(
               title: item.name,
-              amount: item.amountWithTax - item.itemTax,
+              amount: item.amountWithTax,
               subtitle: item.personNames,
-              extra: item.itemTax > 0
-                  ? ReceiptDisplayExtra(
-                      label: 'Tax',
-                      amount: item.itemTax,
-                    )
-                  : null,
             ),
           )
           .toList();
@@ -90,7 +84,7 @@ extension TaxedReceiptSummaryDisplay on TaxedReceiptSummary {
             subtitle: person.itemNames,
             extra: person.taxAmount > 0
                 ? ReceiptDisplayExtra(
-                    label: 'Tax',
+                    label: 'Tax per person',
                     amount: person.taxAmount,
                   )
                 : null,

@@ -32,34 +32,12 @@ Future<void> pumpWithDeps(WidgetTester tester, TestAppDeps deps) async {
   );
 }
 
-Finder insertItemTextField(int rowIndex, int fieldIndex) {
-  return find
-      .descendant(
-        of: find.byKey(Key('insert_item_row_$rowIndex')),
-        matching: find.byType(TextField),
-      )
-      .at(fieldIndex);
-}
-
-Future<void> enterInsertItem(
-  WidgetTester tester, {
-  int rowIndex = 0,
-  required String name,
-  required String amount,
-}) async {
-  await tester.enterText(insertItemTextField(rowIndex, 0), name);
-  await tester.enterText(insertItemTextField(rowIndex, 1), amount);
-}
-
-Future<void> enterInsertPerson(WidgetTester tester, String name) async {
-  await tester.enterText(find.byKey(const Key('insert_person_row')), name);
-}
-
 Future<void> openTaxInsert(WidgetTester tester) async {
   await tester.tap(find.text('Manual insert'));
   await tester.pumpAndSettle();
-  await enterInsertItem(tester, name: 'Coffee', amount: '10');
-  await enterInsertPerson(tester, 'Alex');
+  await tester.enterText(find.byType(TextField).at(0), 'Coffee');
+  await tester.enterText(find.byType(TextField).at(1), '10');
+  await tester.enterText(find.byType(TextField).at(4), 'Alex');
   await tester.tap(find.byKey(const Key('confirm_button')));
   await tester.pumpAndSettle();
   await tester.tap(find.byKey(const Key('preview_confirm_button')));

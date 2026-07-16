@@ -8,19 +8,9 @@ class ItemRowState {
 
   final TextEditingController nameController;
   final TextEditingController amountController;
-  int quantity = 0;
-  VoidCallback? _nameListener;
-
-  void attachNameListener(VoidCallback listener) {
-    _nameListener = listener;
-    nameController.addListener(listener);
-  }
+  int splitCount = 0;
 
   void dispose() {
-    if (_nameListener != null) {
-      nameController.removeListener(_nameListener!);
-      _nameListener = null;
-    }
     nameController.dispose();
     amountController.dispose();
   }
@@ -28,7 +18,7 @@ class ItemRowState {
   ItemEntry toEntry() => ItemEntry(
         name: nameController.text,
         amount: amountController.text,
-        quantity: quantity,
+        splitCount: splitCount,
       );
 }
 
@@ -36,6 +26,7 @@ class PersonRowState {
   PersonRowState() : nameController = TextEditingController();
 
   final TextEditingController nameController;
+  String emoji = '';
 
   void dispose() {
     nameController.dispose();
@@ -43,5 +34,6 @@ class PersonRowState {
 
   PersonEntry toEntry() => PersonEntry(
         name: nameController.text,
+        emoji: emoji,
       );
 }

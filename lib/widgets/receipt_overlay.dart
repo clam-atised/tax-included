@@ -1,0 +1,171 @@
+import 'package:flutter/material.dart';
+import 'package:receipt_recognition/receipt_recognition.dart';
+
+class ReceiptOverlay extends StatelessWidget {
+  const ReceiptOverlay({
+    super.key,
+    required this.positions,
+    required this.imageSize,
+    required this.screenSize,
+    this.store,
+    this.totalLabel,
+    this.total,
+    this.purchaseDate,
+  });
+
+  final List<RecognizedPosition> positions;
+  final RecognizedStore? store;
+  final RecognizedTotalLabel? totalLabel;
+  final RecognizedTotal? total;
+  final RecognizedPurchaseDate? purchaseDate;
+  final Size imageSize;
+  final Size screenSize;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: _OverlayPainter(
+        positions: positions,
+        imageSize: imageSize,
+        screenSize: screenSize,
+        store: store,
+        totalLabel: totalLabel,
+        total: total,
+        purchaseDate: purchaseDate,
+      ),
+    );
+  }
+}
+
+class _OverlayPainter extends CustomPainter {
+  _OverlayPainter({
+    required this.positions,
+    required this.imageSize,
+    required this.screenSize,
+    this.store,
+    this.totalLabel,
+    this.total,
+    this.purchaseDate,
+  });
+
+  final List<RecognizedPosition> positions;
+  final RecognizedStore? store;
+  final RecognizedTotalLabel? totalLabel;
+  final RecognizedTotal? total;
+  final RecognizedPurchaseDate? purchaseDate;
+  final Size imageSize;
+  final Size screenSize;
+
+  void _fillHatched(
+    Canvas canvas,
+    Rect rect,
+    Color color, {
+    double spacing = 6.0,
+    double strokeWidth = 1.0,
+  }) {
+    if (rect.isEmpty) return;
+    final paint = Paint()
+      ..color = color.withAlpha(192)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth;
+
+    canvas.save();
+    canvas.clipRect(rect);
+
+    final startX = rect.left - rect.height;
+    final endX = rect.right + rect.height;
+    for (double x = startX; x <= endX; x += spacing) {
+      canvas.drawLine(
+        Offset(x, rect.top),
+        Offset(x + rect.height, rect.bottom),
+        paint,
+      );
+    }
+
+    canvas.restore();
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paintPosition = Paint()
+      ..color = Colors.orange.withAlpha(224)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+
+    final paintStore = Paint()
+      ..color = Colors.blueAccent.withAlpha(224)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+
+    final paintTotalLabel = Paint()
+      ..color = Colors.deepPurpleAccent.withAlpha(224)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+
+    final paintTotal = Paint()
+      ..color = Colors.green.withAlpha(224)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+
+    final paintPurchaseDate = Paint()
+      ..color = Colors.amber.withAlpha(224)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+
+    for (final position in positions) {
+      final rectProduct = _scale(position.product.line.boundingBox);
+      final rectPrice = _scale(position.price.line.boundingBox);
+
+      _fillHatched(canvas, rectProduct, Colors.orange);
+      _fillHatched(canvas, rectPrice, Colors.orange);
+
+      canvas.drawRect(rectProduct, paintPosition);
+      canvas.drawRect(rectPrice, paintPosition);
+    }
+
+    if (store != null && store!.line.boundingBox != Rect.zero) {
+      final rect = _scale(store!.line.boundingBox);
+      _fillHatched(canvas, rect, Colors.blueAccent);
+      canvas.drawRect(rect, paintStore);
+    }
+
+    if (totalLabel != null && totalLabel!.line.boundingBox != Rect.zero) {
+      final rect = _scale(totalLabel!.line.boundingBox);
+      _fillHatched(canvas, rect, Colors.deepPurpleAccent);
+      canvas.drawRect(rect, paintTotalLabel);
+    }
+
+    if (total != null && total!.line.boundingBox != Rect.zero) {
+      final rect = _scale(total!.line.boundingBox);
+      _fillHatched(canvas, rect, Colors.green);
+      canvas.drawRect(rect, paintTotal);
+    }
+
+    if (purchaseDate != null && purchaseDate!.line.boundingBox != Rect.zero) {
+      final rect = _scale(purchaseDate!.line.boundingBox);
+      _fillHatched(canvas, rect, Colors.amber);
+      canvas.drawRect(rect, paintPurchaseDate);
+    }
+  }
+
+  Rect _scale(Rect rect) {
+    final sx = screenSize.width / imageSize.width;
+    final sy = screenSize.height / imageSize.height;
+    return Rect.fromLTRB(
+      rect.left * sx,
+      rect.top * sy,
+      rect.right * sx,
+      rect.bottom * sy,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _OverlayPainter old) =>
+      old.positions != positions ||
+      old.imageSize != imageSize ||
+      old.screenSize != screenSize ||
+      old.store != store ||
+      old.totalLabel != totalLabel ||
+      old.total != total ||
+      old.purchaseDate != purchaseDate;
+}
